@@ -1,14 +1,14 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# File   : __init__.py
+# File   : patch_match.py
 # Author : Jiayuan Mao
 # Email  : maojiayuan@gmail.com
-# Date   : 01/24/2018
+# Date   : 01/09/2020
 #
 # This file is part of Jacinle.
 # Distributed under terms of the MIT license.
 
-from .batch import *
-from .indexing import *
-from .nd import *
-from .shape import *
+from patch_match import inpaint
+
+__all__ = ['inpaint']
+

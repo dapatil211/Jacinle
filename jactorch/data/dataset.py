@@ -8,6 +8,7 @@
 # This file is part of Jacinle.
 # Distributed under terms of the MIT license.
 
+import random
 import itertools
 
 from torch.utils.data.dataset import Dataset
@@ -69,7 +70,7 @@ class ListDataset(Dataset):
         return len(self.list)
 
 
-class FilterableDatasetUnwrapped(Dataset):
+class FilterableDatasetUnwrapped(Dataset, IterableDatasetMixin):
     """
     A filterable dataset. User can call various `filter_*` operations to obtain a subset of the dataset.
     """
@@ -142,6 +143,8 @@ class FilterableDatasetView(FilterableDatasetUnwrapped):
         return type(self)(self, indices=indices, filter_name='randomtrim[{}]'.format(length))
 
     def trim_length(self, length):
+        if type(length) is float and 0 < length <= 1:
+            length = int(len(self) * length)
         assert length < len(self)
         logger.info('Trim the dataset: #samples = {}.'.format(length))
         return type(self)(self, indices=list(range(0, length)), filter_name='trim[{}]'.format(length))
@@ -154,7 +157,11 @@ class FilterableDatasetView(FilterableDatasetUnwrapped):
         return type(self)(self, indices=list(range(begin, end)), filter_name='trimrange[{}:{}]'.format(begin, end))
 
     def split_trainval(self, split):
-        assert split < len(self)
+        if isinstance(split, float) and 0 < split < 1:
+            split = int(len(self) * split)
+        split = int(split)
+
+        assert 0 < split < len(self)
         nr_train = split
         nr_val = len(self) - nr_train
         logger.info('Split the dataset: #training samples = {}, #validation samples = {}.'.format(nr_train, nr_val))
@@ -174,7 +181,8 @@ class FilterableDatasetView(FilterableDatasetUnwrapped):
             )
 
     def repeat(self, nr_repeats):
-        return type(self)(self, indices=list(itertools.chain(*[range(len(self)) for _ in range(nr_repeats)])), filter_name='repeat[{}]'.format(nr_repeats))
+        indices = list(itertools.chain(*[range(len(self)) for _ in range(nr_repeats)]))
+        return type(self)(self, indices=indices, filter_name='repeat[{}]'.format(nr_repeats))
 
     def __getitem__(self, index):
         if self.indices is None:

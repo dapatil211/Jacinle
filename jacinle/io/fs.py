@@ -19,8 +19,10 @@ import contextlib
 import pickle
 import gzip
 import numpy as np
+import scipy.io as sio
 
 from jacinle.logging import get_logger
+from jacinle.utils.enum import JacEnum
 from jacinle.utils.filelock import FileLock
 from jacinle.utils.registry import RegistryGroup, CallbackRegistry
 
@@ -31,10 +33,10 @@ logger = get_logger(__file__)
 __all__ = [
     'as_file_descriptor', 'fs_verbose', 'set_fs_verbose',
     'open', 'open_txt', 'open_h5', 'open_gz',
-    'load', 'load_txt', 'load_h5', 'load_pkl', 'load_pklgz', 'load_npy', 'load_npz', 'load_pth',
-    'dump', 'dump_pkl', 'dump_pklgz', 'dump_npy', 'dump_npz', 'dump_pth',
+    'load', 'load_txt', 'load_h5', 'load_pkl', 'load_pklgz', 'load_npy', 'load_npz', 'load_mat', 'load_pth',
+    'dump', 'dump_pkl', 'dump_pklgz', 'dump_npy', 'dump_npz', 'dump_mat', 'dump_pth',
     'safe_dump',
-    'link', 'mkdir', 'remove', 'locate_newest_file', 'io_function_registry'
+    'link', 'mkdir', 'lsdir', 'remove', 'locate_newest_file', 'io_function_registry'
 ]
 
 sys_open = open
@@ -91,6 +93,10 @@ def load_npz(file, **kwargs):
     return np.load(file, **kwargs)
 
 
+def load_mat(file, **kwargs):
+    return sio.loadmat(file, **kwargs)
+
+
 def load_pth(file, **kwargs):
     import torch
     return torch.load(file, **kwargs)
@@ -112,6 +118,10 @@ def dump_npy(file, obj, **kwargs):
 
 def dump_npz(file, obj, **kwargs):
     return np.savez(file, obj)
+
+
+def dump_mat(file, obj, **kwargs):
+    return sio.savemat(file, obj, **kwargs)
 
 
 def dump_pth(file, obj, **kwargs):
@@ -144,12 +154,14 @@ io_function_registry.register('load', '.txt',   load_txt)
 io_function_registry.register('load', '.h5',    load_h5)
 io_function_registry.register('load', '.npy',   load_npy)
 io_function_registry.register('load', '.npz',   load_npz)
+io_function_registry.register('load', '.mat',   load_mat)
 io_function_registry.register('load', '.pth',   load_pth)
 
 io_function_registry.register('dump', '.pkl',   dump_pkl)
 io_function_registry.register('dump', '.pklgz', dump_pklgz)
 io_function_registry.register('dump', '.npy',   dump_npy)
 io_function_registry.register('dump', '.npz',   dump_npz)
+io_function_registry.register('dump', '.npz',   dump_mat)
 io_function_registry.register('dump', '.pth',   dump_pth)
 
 
@@ -165,7 +177,7 @@ def fs_verbose(mode=True):
     _fs_verbose = mode
 
 
-def set_fs_verbose(mode):
+def set_fs_verbose(mode=True):
     global _fs_verbose
     _fs_verbose = mode
 
@@ -227,6 +239,40 @@ def mkdir(path):
     return os.makedirs(path, exist_ok=True)
 
 
+class LSDirectoryReturnType(JacEnum):
+    BASE = 'base'
+    NAME = 'name'
+    REL = 'rel'
+    FULL = 'full'
+    REAL = 'real'
+
+
+def lsdir(dirname, pattern=None, return_type='full'):
+    assert '*' in dirname or '?' in dirname or osp.isdir(dirname)
+
+    return_type = LSDirectoryReturnType.from_string(return_type)
+    if pattern is not None:
+        files = glob.glob(osp.join(dirname, pattern))
+    elif '*' in dirname:
+        files = glob.glob(dirname)
+    else:
+        files = os.listdir(dirname)
+
+    if return_type is LSDirectoryReturnType.BASE:
+        return [osp.basename(f) for f in files]
+    elif return_type is LSDirectoryReturnType.NAME:
+        return [osp.splitext(osp.basename(f))[0] for f in files]
+    elif return_type is LSDirectoryReturnType.REL:
+        assert '*' not in dirname and '?' not in dirname, 'Cannot use * or ? for relative paths.'
+        return [osp.relpath(f, dirname) for f in files]
+    elif return_type is LSDirectoryReturnType.FULL:
+        return files
+    elif return_type is LSDirectoryReturnType.REAL:
+        return [osp.realpath(osp.join(dirname, f)) for f in files]
+    else:
+        raise ValueError('Unknown lsdir return type: {}.'.format(return_type))
+
+
 def remove(file):
     if osp.exists(file):
         if osp.isdir(file):
@@ -236,7 +282,6 @@ def remove(file):
 
 
 def locate_newest_file(dirname, pattern):
-    assert osp.isdir(dirname)
-    fs = glob.glob(osp.join(dirname, pattern))
+    fs = lsdir(dirname, pattern, return_type='full')
     return max(fs, key=osp.getmtime)
 

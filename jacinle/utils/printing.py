@@ -12,20 +12,40 @@ import io
 import sys
 import numpy as np
 import collections
+import contextlib
 
 import threading
 from .registry import LockRegistry
 
-__all__ = ['stprint', 'stformat', 'kvprint', 'kvformat', 'PrintToStringContext', 'print_to_string', 'print2format']
+__all__ = [
+    'indent_text',
+    'stprint', 'stformat', 'kvprint', 'kvformat',
+    'PrintToStringContext', 'print_to_string', 'print_to', 'print2format'
+]
 
 
 _DEFAULT_FLOAT_FORMAT = '{:.6f}'
+
+
+def indent_text(text, level=1, indent_format=None, tabsize=None):
+    if indent_format is not None:
+        assert tabsize is None, 'Cannot provide both indent format and tabsize.'
+    if tabsize is not None:
+        assert indent_format is None, 'Cannot provide both indent format and tabsize.'
+        indent_format = ' ' * tabsize
+    if indent_format is None and tabsize is None:
+        indent_format = '  '
+    indent_format = indent_format * level
+    return indent_format + text.replace('\n', '\n' + indent_format)
 
 
 def format_printable_data(data, float_format=_DEFAULT_FLOAT_FORMAT):
     t = type(data)
     if t is np.ndarray:
         return 'ndarray{}, dtype={}'.format(data.shape, data.dtype)
+    # Handle torch.tensor
+    if 'Tensor' in str(t):
+        return 'tensor{}, dtype={}'.format(tuple(data.shape), data.dtype)
     elif t is float:
         return float_format.format(data)
     else:
@@ -173,6 +193,16 @@ class PrintToStringContext(object):
 
 def print_to_string(target='STDOUT'):
     return PrintToStringContext(target, need_lock=True)
+
+
+@contextlib.contextmanager
+def print_to(print_func, target='STDOUT', rstrip=True):
+    with PrintToStringContext(target, need_lock=True) as ctx:
+        yield
+    out_str = ctx.get()
+    if rstrip:
+        out_str = out_str.rstrip()
+    print_func(out_str)
 
 
 def print2format(print_func):

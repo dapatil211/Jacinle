@@ -51,7 +51,12 @@ class _DependencyNodeVisitor(ast.NodeVisitor):
         self.dependencies = list()
 
     def visit_Call(self, node):
-        self.dependencies.append(node.func.id)
+        if isinstance(node.func, ast.Name):
+            self.dependencies.append(node.func.id)
+        else:
+            assert isinstance(node.func, ast.Attribute), type(node.func)
+            self.dependencies.append(node.func.value.id)
+
 
     def __call__(self, node):
         self.dependencies = list()
@@ -172,8 +177,8 @@ setup(
         func.dependencies = self.dependency_visitor(tree.body[0])
 
     # TODO(Jiayuan Mao @ 04/06): exclude args.
-    cdef_re = re.compile('^([ \t]+)([a-zA-Z_][a-zA-Z_0-9]*)( )*:( )*\'?(([a-zA-Z_][a-zA-Z_0-9]*\.)*([a-zA-Z_][a-zA-Z_0-9]*))(\[.*\])?\'?', flags=re.M)
-    args_re = re.compile('([a-zA-Z_][a-zA-Z_0-9]*)( )*:( )*\'?(([a-zA-Z_][a-zA-Z_0-9]*\.)*([a-zA-Z_][a-zA-Z_0-9]*))(\[.*\])?\'?', flags=re.M)
+    cdef_re = re.compile('^([ \t]+)([a-zA-Z_][a-zA-Z_0-9]*)( )*:( )*\'?(([a-zA-Z_][a-zA-Z_0-9]*\.)*([a-zA-Z_][a-zA-Z_0-9]*))(\[.*?\])?\'?', flags=re.M)
+    args_re = re.compile('([a-zA-Z_][a-zA-Z_0-9]*)( )*:( )*\'?(([a-zA-Z_][a-zA-Z_0-9]*\.)*([a-zA-Z_][a-zA-Z_0-9]*))(\[.*?\])?\'?', flags=re.M)
 
     def optimize_cdef(self, func):
         func.pyx_source = self.cdef_re.sub('\\1cdef \\5\\8 \\2', func.pyx_source)
@@ -183,7 +188,7 @@ setup(
         func.pyx_source = '@cython.boundscheck({})\n'.format(func.extra_args['boundscheck']) + \
                 '@cython.wraparound({})\n'.format(func.extra_args['wraparound']) + func.pyx_source
 
-    cdef_function_re = re.compile('^([ \t]*)def (.*?)( )*->( )*\'?(([a-zA-Z_][a-zA-Z_0-9]*\.)*([a-zA-Z_][a-zA-Z_0-9]*))\'?(\[.*\])?', flags=re.M)
+    cdef_function_re = re.compile('^([ \t]*)def (.*?)( )*->( )*\'?(([a-zA-Z_][a-zA-Z_0-9]*\.)*([a-zA-Z_][a-zA-Z_0-9]*))\'?(\[.*?\])?', flags=re.M)
     def optimize_cdef_function(self, func):
         func.pyx_source_cdef = self.cdef_function_re.sub('\\1cdef \\5\\8 \\2', func.pyx_source)
 

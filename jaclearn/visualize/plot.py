@@ -31,8 +31,7 @@ def plot2opencv(fig):
 
 @pil_only
 def plot2pil(fig):
-    buffer = _io.StringIO()
-    fig.canvas.draw()
+    canvas = fig.canvas
+    canvas.draw()
     pil = Image.frombytes('RGB', canvas.get_width_height(), canvas.tostring_rgb())
     return pil
-

@@ -25,7 +25,10 @@ if jac_getenv('IMPORT_ALL', 'true', 'bool'):
     from jacinle.utils.cache import cached_property, cached_result, fs_cached_result
     from jacinle.utils.container import G, g, GView, SlotAttrObject, OrderedSet
     from jacinle.utils.context import EmptyContext
-    from jacinle.utils.defaults import defaults_manager, wrap_custom_as_default, gen_get_default, gen_set_default
+    from jacinle.utils.defaults import (
+            defaults_manager, wrap_custom_as_default, gen_get_default, gen_set_default,
+            default_args, ARGDEF
+    )
     from jacinle.utils.deprecated import deprecated
     from jacinle.utils.enum import JacEnum
     from jacinle.utils.exception import format_exc
@@ -46,8 +49,10 @@ if jac_getenv('IMPORT_ALL', 'true', 'bool'):
     from jacinle.utils.naming import class_name, func_name, method_name, class_name_of_method
     from jacinle.utils.network import get_local_addr
     from jacinle.utils.numeric import safe_sum, mean, std, rms, prod, divup
-    from jacinle.utils.printing import stprint, stformat, kvprint, kvformat, print_to_string
+    from jacinle.utils.printing import indent_text, stprint, stformat, kvprint, kvformat, print_to_string, print_to
     from jacinle.utils.tqdm import get_current_tqdm, tqdm, tqdm_pbar, tqdm_gofor, tqdm_zip
+
+    from jacinle import io
 
     # For debug purpose.
     def embed(*args, **kwargs):
