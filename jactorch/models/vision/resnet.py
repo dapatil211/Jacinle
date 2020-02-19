@@ -18,9 +18,16 @@ from jactorch.io import load_state_dict
 from jactorch.nn import ResidualConvBlock, ResidualConvBottleneck
 
 
-__all__ = ['ResNet', 'make_resnet',
-           'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152',
-           'reset_resnet_parameters']
+__all__ = [
+    "ResNet",
+    "make_resnet",
+    "resnet18",
+    "resnet34",
+    "resnet50",
+    "resnet101",
+    "resnet152",
+    "reset_resnet_parameters",
+]
 
 
 class ResNet(nn.Module):
@@ -52,8 +59,13 @@ class ResNet(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
@@ -87,19 +99,19 @@ class ResNet(nn.Module):
 
 
 cfgs = {
-    'resnet18': (ResidualConvBlock, [2, 2, 2, 2]),
-    'resnet34': (ResidualConvBlock, [3, 4, 6, 3]),
-    'resnet50': (ResidualConvBottleneck, [3, 4, 6, 3]),
-    'resnet101': (ResidualConvBottleneck, [3, 4, 23, 3]),
-    'resnet152': (ResidualConvBottleneck, [3, 8, 36, 3]),
+    "resnet18": (ResidualConvBlock, [2, 2, 2, 2]),
+    "resnet34": (ResidualConvBlock, [3, 4, 6, 3]),
+    "resnet50": (ResidualConvBottleneck, [3, 4, 6, 3]),
+    "resnet101": (ResidualConvBottleneck, [3, 4, 23, 3]),
+    "resnet152": (ResidualConvBottleneck, [3, 8, 36, 3]),
 }
 
 model_urls = {
-    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
-    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+    "resnet18": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
+    "resnet34": "https://download.pytorch.org/models/resnet34-333f7ec4.pth",
+    "resnet50": "https://download.pytorch.org/models/resnet50-19c8e357.pth",
+    "resnet101": "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth",
+    "resnet152": "https://download.pytorch.org/models/resnet152-b121ed2d.pth",
 }
 
 
@@ -108,8 +120,8 @@ def make_resnet(net_id, pretrained, incl_gap=True, num_classes=1000):
     if pretrained:
         pretrained_model = model_zoo.load_url(model_urls[net_id])
         if num_classes != 1000:
-            del pretrained_model['fc.weight']
-            del pretrained_model['fc.bias']
+            del pretrained_model["fc.weight"]
+            del pretrained_model["fc.bias"]
 
         try:
             load_state_dict(model, pretrained_model)
@@ -121,21 +133,21 @@ def make_resnet(net_id, pretrained, incl_gap=True, num_classes=1000):
 def make_resnet_contructor(net_id):
     func = functools.partial(make_resnet, net_id=net_id)
     func.__name__ = net_id
-    func.__doc__ = net_id.replace('resnet', 'ResNet-')
+    func.__doc__ = net_id.replace("resnet", "ResNet-")
     return func
 
 
-resnet18 = make_resnet_contructor('resnet18')
-resnet34 = make_resnet_contructor('resnet34')
-resnet50 = make_resnet_contructor('resnet50')
-resnet101 = make_resnet_contructor('resnet101')
-resnet152 = make_resnet_contructor('resnet152')
+resnet18 = make_resnet_contructor("resnet18")
+resnet34 = make_resnet_contructor("resnet34")
+resnet50 = make_resnet_contructor("resnet50")
+resnet101 = make_resnet_contructor("resnet101")
+resnet152 = make_resnet_contructor("resnet152")
 
 
 def reset_resnet_parameters(m, fc_std=0.01, bfc_std=0.001):
     if isinstance(m, nn.Conv2d):
         n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-        m.weight.data.normal_(0, math.sqrt(2. / n))
+        m.weight.data.normal_(0, math.sqrt(2.0 / n))
         if m.bias is not None:
             m.bias.data.zero_()
     elif isinstance(m, nn.BatchNorm2d):
