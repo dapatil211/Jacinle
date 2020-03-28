@@ -3,14 +3,14 @@
 # File   : __init__.py
 # Author : Jiayuan Mao
 # Email  : maojiayuan@gmail.com
-# Date   : 01/18/2018
+# Date   : 03/09/2020
 #
 # This file is part of Jacinle.
 # Distributed under terms of the MIT license.
 
-from .common import *
-from .fs import *
-from .network import *
-from .pretty import *
-from .tempfile import *
+import torch
 
+if torch.__version__ < '0.3.1':
+    from .dataloader_torch030 import *
+else:
+    from .dataloader import *

@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
-# File   : collate.py
+# File   : collate_v2.py
 # Author : Jiayuan Mao
-# Email  : maojiayuan@gmail.com # Date   : 03/04/2018
+# Email  : maojiayuan@gmail.com
+# Date   : 03/09/2020
 #
 # This file is part of Jacinle.
 # Distributed under terms of the MIT license.
@@ -16,6 +17,12 @@ from six import string_types
 
 from jacinle.utils.argument import UniqueValueGetter
 from jacinle.utils.enum import JacEnum
+from .utils import (
+    use_shared_memory,
+    numpy_type_map,
+    user_scattered_collate,
+    VarLengthCollateMode,
+)
 
 __all__ = [
     "numpy_type_map",
@@ -156,6 +163,7 @@ class VarLengthCollateV2(object):
         raise TypeError((error_msg.format(type(batch[0]))))
 
     def _stack(self, values, key=None):
+        mode, parameters = None, None
         if key is not None:
             mode_spec = self._fields[key]
             if isinstance(mode_spec, tuple):
@@ -166,7 +174,7 @@ class VarLengthCollateV2(object):
                 parameters = tuple()
 
         out = None
-        if _use_shared_memory():
+        if use_shared_memory():
             # If we're in a background process, concatenate directly into a
             # shared memory tensor to avoid an extra copy
             numel = 0
@@ -261,4 +269,3 @@ def VarLengthCollate(*args, **kwargs):
     from .collate_v1 import VarLengthCollate
 
     return VarLengthCollate(*args, **kwargs)
-
