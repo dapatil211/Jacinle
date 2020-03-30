@@ -11,6 +11,7 @@
 import tensorflow as tf
 import numpy as np
 import scipy.misc
+
 try:
     from StringIO import StringIO as BytesIO  # Python 2.7
 except ImportError:
@@ -24,11 +25,14 @@ class TBLogger(object):
     # https://raw.githubusercontent.com/SherlockLiao/pytorch-beginner/
 
     def __init__(self, log_dir):
-        self.writer = tf.summary.FileWriter(log_dir)
+        self.writer = tf.summary.create_file_writer(log_dir)
 
     def scalar_summary(self, tag, value, step):
-        summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value)])
-        self.writer.add_summary(summary, step)
+        with self.writer.as_default():
+            summary = tf.summary.scalar(
+                tag, value, step=step
+            )  # value=[tf.Summary.Value(tag=tag, simple_value=value)])
+        # self.writer.add_summary(summary, step)
 
     def image_summary(self, tag, images, step):
         img_summaries = []
@@ -38,12 +42,15 @@ class TBLogger(object):
             scipy.misc.toimage(img).save(s, format="png")
 
             # Create an Image object
-            img_sum = tf.Summary.Image(encoded_image_string=s.getvalue(),
-                                       height=img.shape[0],
-                                       width=img.shape[1])
+            img_sum = tf.Summary.Image(
+                encoded_image_string=s.getvalue(),
+                height=img.shape[0],
+                width=img.shape[1],
+            )
             # Create a Summary value
             img_summaries.append(
-                tf.Summary.Value(tag='%s/%d' % (tag, i), image=img_sum))
+                tf.Summary.Value(tag="%s/%d" % (tag, i), image=img_sum)
+            )
 
         # Create and write Summary
         summary = tf.Summary(value=img_summaries)
@@ -97,7 +104,9 @@ class TBGroupMeters(GroupMeters):
         updates.update(kwargs)
         for k, v in updates.items():
             self._meters[k].update(v, n=n)
-            self._tb_logger.scalar_summary(k, self._meters[k].val, self._meters[k].tot_count)
+            self._tb_logger.scalar_summary(
+                k, self._meters[k].val, self._meters[k].tot_count
+            )
 
     def flush(self):
         self._tb_logger.flush()
